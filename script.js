@@ -1,3 +1,4 @@
+
 'use strict';
 
 const form = document.querySelector('.form');
@@ -22,11 +23,11 @@ class Workout {
   _setDescription() {
     this.type === 'running'
       ? (this.descrition = `Пробежка ${new Intl.DateTimeFormat('ru-Ru').format(
-          this.date
-        )}`)
+        this.date
+      )}`)
       : (this.descrition = `Велотренировка ${new Intl.DateTimeFormat(
-          'ru-Ru'
-        ).format(this.date)}`);
+        'ru-Ru'
+      ).format(this.date)}`);
   }
 
   click() {
@@ -85,6 +86,7 @@ class App {
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleClimbField);
     containerWorkouts.addEventListener('click', this._moveToWorkout.bind(this));
+    containerWorkouts.addEventListener('click', this._deleteWorkout.bind(this)); // Новий обробник
   }
 
   _getPosition() {
@@ -134,7 +136,7 @@ class App {
       inputDuration.value =
       inputTemp.value =
       inputClimb.value =
-        '';
+      '';
     form.classList.add('hidden');
   }
 
@@ -231,10 +233,10 @@ class App {
     let html = `
     <li class="workout workout--${workout.type}" data-id="${workout.id}">
       <h2 class="workout__title">${workout.descrition}</h2>
+      <button class="btn--delete-workout">❌</button>
       <div class="workout__details">
-        <span class="workout__icon">${
-          workout.type === 'running' ? '🏃' : '🚵‍♂️'
-        }</span>
+        <span class="workout__icon">${workout.type === 'running' ? '🏃' : '🚵‍♂️'
+      }</span>
         <span class="workout__value">${workout.distance}</span>
         <span class="workout__unit">км</span>
       </div>
@@ -298,6 +300,27 @@ class App {
     });
   }
 
+  _deleteWorkout(e) {
+    const workoutEl = e.target.closest('.workout');
+
+    if (!workoutEl) return;
+    if (!e.target.classList.contains('btn--delete-workout')) return;
+
+    const workoutId = workoutEl.dataset.id;
+
+    // Видалити тренування з масиву
+    this.#workouts = this.#workouts.filter(workout => workout.id !== workoutId);
+
+    // Оновити локальне сховище
+    this._addWorkoutsToLocalStorage();
+
+    // Видалити тренування з інтерфейсу
+    workoutEl.remove();
+
+    // Оновити карту
+    this._reloadMap();
+  }
+
   _addWorkoutsToLocalStorage() {
     localStorage.setItem('workouts', JSON.stringify(this.#workouts));
   }
@@ -315,10 +338,24 @@ class App {
     });
   }
 
+  _reloadMap() {
+    this.#map.eachLayer(layer => {
+      if (layer instanceof L.Marker) {
+        layer.remove();
+      }
+    });
+
+    // Заново відобразити тренування на карті
+    this.#workouts.forEach(workout => {
+      this._displayWorkout(workout);
+    });
+  }
+
   reset() {
     localStorage.removeItem('workouts');
     location.reload();
   }
+
 }
 
 const app = new App();
